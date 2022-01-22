@@ -48,6 +48,7 @@ public class GenAlgoVisualiser extends JFrame implements ActionListener{
                    genSizeDesc = new JLabel("Størrelse af generationerne:"),
                    parAmntDesc = new JLabel("Antal af forældre:"),
                    newScoreDesc = new JLabel(),
+                   crntItemsDesc = new JLabel(),
                    scoresDesc = new JLabel(),
                    newItemDesc = new JLabel(),
                    itemListDesc = new JLabel("De nuværende genstande på huskelisten er: (Tryk for at fjerne dem)");
@@ -84,6 +85,7 @@ public class GenAlgoVisualiser extends JFrame implements ActionListener{
         panel.add(parAmntDesc);
         panel.add(new JLabel(" "));
         panel.add(newScoreDesc);
+        panel.add(crntItemsDesc);
         panel.add(scoresDesc);
     }
 
@@ -208,6 +210,13 @@ public class GenAlgoVisualiser extends JFrame implements ActionListener{
         newItemDesc.setText("Ny genstand: " + newItem.toString());
     }
 
+    private void resetAlgorithm() {
+        currentGen = null;
+        scores.clear();
+        revalidate();
+        repaint();
+    }
+
     private void restartAlgorithm() {
         scores.clear();
         inputDesc.setText(" ");
@@ -222,7 +231,9 @@ public class GenAlgoVisualiser extends JFrame implements ActionListener{
             currentGen = GeneticAlgorithm.makeGenerations(generationAmount, generationSize, parentAmount, childSize, geneSupplier, childScorer);
         else
             currentGen = GeneticAlgorithm.makeGenerationsFromGeneration(currentGen, generationAmount, generationSize, parentAmount, geneSupplier, childScorer);
-        scores.add(Backpack.getPriceIfAllowed(GeneticAlgorithm.getBestChild(currentGen, childScorer)));
+        List<Boolean> bestChild = GeneticAlgorithm.getBestChild(currentGen, childScorer);
+        scores.add(Backpack.getPriceIfAllowed(bestChild));
+        crntItemsDesc.setText(Backpack.getNames(bestChild));
         String text = "<html>De bedste taske-værdier har været: ";
         for(int i : scores)
             text += i + " ";
@@ -315,6 +326,7 @@ public class GenAlgoVisualiser extends JFrame implements ActionListener{
                 Backpack.addItem(newItem);
                 input = generationSize + "";
                 state = State.GEN_AMOUNT;
+                resetAlgorithm();
                 initializeAlgorithmLabels();
                 break;
             default:
@@ -323,17 +335,14 @@ public class GenAlgoVisualiser extends JFrame implements ActionListener{
     }
 
     private boolean updateInput(KeyEvent k) {
-        
         if(k.getKeyCode() == KeyEvent.VK_BACK_SPACE) {
             input = input.length() != 0 ? input.substring(0, input.length() - 1) : input;
             return true;
         }
-
         if((state == State.ITEM_NAME) ? isNumber(k) || isLetter(k) : isNumber(k)) {
             input += k.getKeyChar();
             return true;
         }
-
         return false;
     }
 
@@ -356,9 +365,6 @@ public class GenAlgoVisualiser extends JFrame implements ActionListener{
         itemButtons.remove(index);
         this.requestFocusInWindow();
         updateItemButtons();
-        currentGen = null;
-        scores.clear();
-        revalidate();
-        repaint();
+        resetAlgorithm();
     }
 }
